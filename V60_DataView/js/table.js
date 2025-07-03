@@ -37,10 +37,6 @@ function filterTable(input, columnIndex, tableId) {
             row.style.display = shouldShow ? '' : 'none';
         }
     });
-
-    // Update row count
-    const visibleRows = Array.from(rows).filter(row => row.style.display !== 'none');
-    updateRowCount(tableId, visibleRows.length, rows.length);
 }
 
 function clearAllFilters(tableId) {
@@ -58,24 +54,6 @@ function clearAllFilters(tableId) {
     rows.forEach(row => {
         row.style.display = '';
     });
-
-    // Update row count
-    updateRowCount(tableId, rows.length, rows.length);
-}
-
-function updateRowCount(tableId, visibleCount, totalCount) {
-    const table = document.getElementById(tableId);
-    const container = table.closest('.table-container');
-    let countElement = container.querySelector('.row-count');
-    
-    if (!countElement) {
-        countElement = document.createElement('div');
-        countElement.className = 'row-count';
-        const header = container.querySelector('.header');
-        header.appendChild(countElement);
-    }
-    
-    countElement.textContent = `${visibleCount} of ${totalCount} rows`;
 }
 
 var IMSintegration;
@@ -352,9 +330,6 @@ var IMSintegration;
             var Table = Mustache.to_html(tableBuilder.TableTemplate, tableProperties);
             $("body").append(Table);
             $(".table-container." + API + "[data-table-id='" + tableId + "']").append(table);
-            
-            // Initialize row count
-            updateRowCount(tableId, tables.length, tables.length);
         };
 
         tableBuilder.prototype.clearTableContainers = function (zone) {
