@@ -14,37 +14,27 @@ var IMSintegration;
             this.establishment = Establishment || "9998";
             this.API = Partner_API || "simphony";
             
-            console.log("Integration initialized with:", {
-                isLeader: this.isLeader,
-                store: this.store,
-                brand: this.brand,
-                establishment: this.establishment,
-                API: this.API
-            });
-            
+            console.log("Integration initialized");
             this.init();
         }
         
         Integration.prototype.init = function () {
             var _this = this;
             
-            // Simulate some sample data for demonstration
+            // Generate sample data for demonstration
             _this.generateSampleData();
             
             if (_this.isLeader) {
-                console.log("Leader instance - initializing app");
                 app.db = _this.db;
                 app.store = _this.store;
                 app.init(_this.API, false);
-            } else {
-                console.log("Follower instance");
             }
         };
         
         Integration.prototype.generateSampleData = function () {
             var _this = this;
             
-            // Create sample integration items
+            // Sample integration items
             var sampleIntegrationItems = [
                 { name: "Cheeseburger", price: "12.99", mappingId: "1001", category: "Burgers", active: true },
                 { name: "Chicken Sandwich", price: "11.49", mappingId: "1002", category: "Sandwiches", active: true },
@@ -86,7 +76,7 @@ var IMSintegration;
                 }
             ];
             
-            // Store sample data in localStorage for demonstration
+            // Store in localStorage
             if (typeof(Storage) !== "undefined") {
                 localStorage.setItem(_this.store + "_integration_products(" + version + ")", JSON.stringify(sampleIntegrationItems));
                 localStorage.setItem(_this.store + "_integration_modifiers(" + version + ")", JSON.stringify(sampleIntegrationModifiers));
@@ -98,12 +88,11 @@ var IMSintegration;
         };
         
         Integration.prototype.new_leader = function () {
-            console.log("New leader elected");
             this.init();
         };
         
         Integration.prototype.setUpdatedDate = function (type) {
-            console.log("Updated date set for:", type);
+            // placeholder
         };
         
         return Integration;
