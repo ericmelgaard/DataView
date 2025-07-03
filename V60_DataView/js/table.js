@@ -37,22 +37,36 @@ function filterTable(input, columnIndex, tableId) {
             row.style.display = shouldShow ? '' : 'none';
         }
     });
+
+    // Show/hide clear button based on input value
+    const clearBtn = input.parentElement.querySelector('.clear-filter-btn');
+    if (filterValue) {
+        clearBtn.style.display = 'block';
+    } else {
+        clearBtn.style.display = 'none';
+    }
 }
 
-function clearAllFilters(tableId) {
+function clearFilter(button, columnIndex, tableId) {
+    const input = button.parentElement.querySelector('.column-filter');
+    input.value = '';
+    button.style.display = 'none';
+    
+    // Show all rows for this column
     const table = document.getElementById(tableId);
-    const filterInputs = table.querySelectorAll('.column-filter');
     const tbody = table.querySelector('tbody');
     const rows = tbody.querySelectorAll('tr');
-
-    // Clear all filter inputs
-    filterInputs.forEach(input => {
-        input.value = '';
-    });
-
-    // Show all rows
+    
     rows.forEach(row => {
         row.style.display = '';
+    });
+    
+    // Re-apply other filters
+    const allFilters = table.querySelectorAll('.column-filter');
+    allFilters.forEach((filter, index) => {
+        if (filter.value && index !== columnIndex) {
+            filterTable(filter, index, tableId);
+        }
     });
 }
 
@@ -297,8 +311,11 @@ var IMSintegration;
                 });
                 headerRow.appendChild(th);
 
-                // Filter cell
+                // Filter cell with input and clear button
                 const filterTh = document.createElement('th');
+                const filterContainer = document.createElement('div');
+                filterContainer.className = 'filter-container';
+                
                 const filterInput = document.createElement('input');
                 filterInput.type = 'text';
                 filterInput.className = 'column-filter';
@@ -306,7 +323,18 @@ var IMSintegration;
                 filterInput.addEventListener('input', function() {
                     filterTable(this, colIdx, tableId);
                 });
-                filterTh.appendChild(filterInput);
+                
+                const clearBtn = document.createElement('span');
+                clearBtn.className = 'clear-filter-btn material-icons';
+                clearBtn.textContent = 'close';
+                clearBtn.style.display = 'none';
+                clearBtn.addEventListener('click', function() {
+                    clearFilter(this, colIdx, tableId);
+                });
+                
+                filterContainer.appendChild(filterInput);
+                filterContainer.appendChild(clearBtn);
+                filterTh.appendChild(filterContainer);
                 filterRow.appendChild(filterTh);
             });
             
@@ -350,9 +378,6 @@ var IMSintegration;
 				</div>
 			</div>
 			<div class="icons">
-				<button class="clear-filters-btn" onclick="event.stopPropagation(); clearAllFilters('{{tableId}}')">
-					<span class="material-icons">clear_all</span> <span class="button-text">Clear Filters</span>
-				</button>
 				<button class="download-btn" onclick="downloadCSV(event, tableBuilder.formattedItems.{{API}}_{{tableData}}, '{{displayName}}_{{APIContext}}')">
 					<span class="material-icons">download</span> <span class="button-text">Download CSV</span>
 				</button>
