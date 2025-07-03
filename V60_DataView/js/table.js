@@ -23,6 +23,60 @@ function downloadCSV(event, tableData, fileName) {
     });
 }
 
+function filterTable(input, columnIndex, tableId) {
+    const table = document.getElementById(tableId);
+    const tbody = table.querySelector('tbody');
+    const rows = tbody.querySelectorAll('tr');
+    const filterValue = input.value.toLowerCase();
+
+    rows.forEach(row => {
+        const cell = row.cells[columnIndex];
+        if (cell) {
+            const cellText = cell.textContent.toLowerCase();
+            const shouldShow = cellText.includes(filterValue);
+            row.style.display = shouldShow ? '' : 'none';
+        }
+    });
+
+    // Update row count
+    const visibleRows = Array.from(rows).filter(row => row.style.display !== 'none');
+    updateRowCount(tableId, visibleRows.length, rows.length);
+}
+
+function clearAllFilters(tableId) {
+    const table = document.getElementById(tableId);
+    const filterInputs = table.querySelectorAll('.column-filter');
+    const tbody = table.querySelector('tbody');
+    const rows = tbody.querySelectorAll('tr');
+
+    // Clear all filter inputs
+    filterInputs.forEach(input => {
+        input.value = '';
+    });
+
+    // Show all rows
+    rows.forEach(row => {
+        row.style.display = '';
+    });
+
+    // Update row count
+    updateRowCount(tableId, rows.length, rows.length);
+}
+
+function updateRowCount(tableId, visibleCount, totalCount) {
+    const table = document.getElementById(tableId);
+    const container = table.closest('.table-container');
+    let countElement = container.querySelector('.row-count');
+    
+    if (!countElement) {
+        countElement = document.createElement('div');
+        countElement.className = 'row-count';
+        const header = container.querySelector('.header');
+        header.appendChild(countElement);
+    }
+    
+    countElement.textContent = `${visibleCount} of ${totalCount} rows`;
+}
 
 var IMSintegration;
 (function (wandDigital) {
@@ -32,6 +86,7 @@ var IMSintegration;
             this.integrationModifiers;
             this.IMSProducts;
             this.formattedItems = [];
+            this.tableCounter = 0;
         }
         tableBuilder.prototype.init = function (integrationItems, integrationModifiers, integrationDiscounts, IMSProducts, IMSItems, API) {
             if (!API) {
@@ -50,9 +105,6 @@ var IMSintegration;
             if (IMSItems) {
 //                this.build(IMSItems, API, "IMSItems", "Menu Items");
             }
-
-
-
         };
 
         tableBuilder.prototype.build = function (tables, API, tableData, nameDesciption) {
@@ -64,6 +116,9 @@ var IMSintegration;
                 API = "IMS"
             }
 
+            // Generate unique table ID
+            const tableId = `table_${API}_${tableData}_${this.tableCounter++}`;
+
             //set up data object
             var tableProperties = {};
             tableProperties.API = API;
@@ -71,7 +126,7 @@ var IMSintegration;
             tableProperties.displayName = tableData.indexOf("IMS") > -1 ? "IMS" + " " + nameDesciption : (API).toUpperCase() + " " + nameDesciption;
             tableProperties.APIContext = tableData.indexOf("IMS") > -1 ? "WAND Digital" + " / " + "Site:" + integration.store : "Brand: " + (integration.brand).toUpperCase() + " / " + "Establiment: " + integration.establishment;
             tableProperties.tableData = tableData;
-
+            tableProperties.tableId = tableId;
 
             //format APIs
             formattedTable = [];
@@ -205,15 +260,21 @@ var IMSintegration;
 
             tables = formattedTable.length > 0 ? formattedTable : tables;
             _this.formattedItems[API + "_" + tableData] = tables;
+            
             // Display data in HTML table
             const table = document.createElement('table');
+            table.id = tableId;
             const thead = document.createElement('thead');
             const tbody = document.createElement('tbody');
 
             // Add header row
             const headerRow = document.createElement('tr');
+            const filterRow = document.createElement('tr');
+            filterRow.className = 'filter-row';
+            
             const keys = Object.keys(tables[0]);
             keys.forEach((key, colIdx) => {
+                // Header cell
                 const th = document.createElement('th');
                 th.textContent = key;
                 th.style.cursor = 'pointer';
@@ -248,10 +309,31 @@ var IMSintegration;
                         });
                         tbody.appendChild(tr);
                     });
+                    // Re-apply filters after sorting
+                    const filterInputs = table.querySelectorAll('.column-filter');
+                    filterInputs.forEach((input, index) => {
+                        if (input.value) {
+                            filterTable(input, index, tableId);
+                        }
+                    });
                 });
                 headerRow.appendChild(th);
+
+                // Filter cell
+                const filterTh = document.createElement('th');
+                const filterInput = document.createElement('input');
+                filterInput.type = 'text';
+                filterInput.className = 'column-filter';
+                filterInput.placeholder = `Filter ${key}...`;
+                filterInput.addEventListener('input', function() {
+                    filterTable(this, colIdx, tableId);
+                });
+                filterTh.appendChild(filterInput);
+                filterRow.appendChild(filterTh);
             });
+            
             thead.appendChild(headerRow);
+            thead.appendChild(filterRow);
 
             // Add data rows
             tables.forEach(row => {
@@ -266,9 +348,13 @@ var IMSintegration;
 
             table.appendChild(thead);
             table.appendChild(tbody);
+            
             var Table = Mustache.to_html(tableBuilder.TableTemplate, tableProperties);
             $("body").append(Table);
-            $(".table-container." + API).append(table)
+            $(".table-container." + API + "[data-table-id='" + tableId + "']").append(table);
+            
+            // Initialize row count
+            updateRowCount(tableId, tables.length, tables.length);
         };
 
         tableBuilder.prototype.clearTableContainers = function (zone) {
@@ -279,7 +365,7 @@ var IMSintegration;
         };
 
         tableBuilder.TableTemplate = `	
-	<div class="table-container {{API}}">
+	<div class="table-container {{API}}" data-table-id="{{tableId}}">
 		<div class="header" onclick="toggleTable(this)">
 			<div class="title-header">
 				<img class="header-img-{{API}}" src="resources/{{API}}.png">
@@ -289,6 +375,9 @@ var IMSintegration;
 				</div>
 			</div>
 			<div class="icons">
+				<button class="clear-filters-btn" onclick="event.stopPropagation(); clearAllFilters('{{tableId}}')">
+					<span class="material-icons">clear_all</span> <span class="button-text">Clear Filters</span>
+				</button>
 				<button class="download-btn" onclick="downloadCSV(event, tableBuilder.formattedItems.{{API}}_{{tableData}}, '{{displayName}}_{{APIContext}}')">
 					<span class="material-icons">download</span> <span class="button-text">Download CSV</span>
 				</button>
