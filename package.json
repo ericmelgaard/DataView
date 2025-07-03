@@ -1,0 +1,13 @@
+{
+  "name": "v60-dataview-server",
+  "version": "1.0.0",
+  "description": "Static file server for V60 DataView",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
